@@ -6,7 +6,7 @@ use App\Models\UserAddress;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
-class OrderPolicy
+class UserAddressPolicy
 {
     use HandlesAuthorization;
 
