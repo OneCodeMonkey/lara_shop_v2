@@ -5,7 +5,7 @@ namespace App\Console\Commands\Elasticsearch;
 use App\Models\Product;
 use Illuminate\Console\Command;
 
-class SyncProducts extends Ccmmand
+class SyncProducts extends Command
 {
     protected $signature = 'es:sync-products {--index=products}';
 
