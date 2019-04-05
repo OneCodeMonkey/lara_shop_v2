@@ -39,6 +39,18 @@
                     <td>{{ $item->amount }}</td>
                 </tr>
             @endforeach
+            <tr>
+                <td>订单金额：</td>
+                <td>￥{{ $order->total_amount }}</td>
+                <td>发货状态：</td>
+                <td>{{ \App\Models\Order::$shipStatusMap[$order->ship_status] }}</td>
+            </tr>
+
+            <!-- 订单发货开始 -->
+            <!-- 如果订单未发货，则展示发货表单 -->
+            @if($order->ship_status === \App\Models\Order::SHIP_STATUS_PENDING)
+
+            @endif
             </tbody>
         </table>
     </div>
