@@ -22,7 +22,6 @@
 							<label for="email" class="col-md-4 col-form-label text-md-right">
 								{{ __('E-Mail Address') }}
 							</label>
-							<!-- to test, is the class definition between "form-control" and "{{$errors->has('email') ? 'is-invalid' : ''}}" no space still working as "class='form-control{{$errors->has('email') ? 'is-invalid' : ''}}'" ?-->
 							<div class="col-md-6">
 								<input id="email" type="email" class="form-control {{$errors->has('email') ? 'is-invalid' : ''}}" name="email" value="{{ old('email') }}" required>
 								@if ($errors->has('email'))
