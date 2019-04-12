@@ -127,18 +127,118 @@
                 dangerMode: true,
             })
                 .then(function (willDelete) {
-                    // 用户点击
-                })
-        })
+                    // 用户点击【确认】，willDelete的值就变成true，否则为false
+                    if(!willDelete) return;
+                    axios.delete('/cart/' + id)
+                        .then(function () {
+                            location.reload();
+                        })
+                });
+        });
 
         // 监听【全选/取消全选】单选框的变更事件
+        $('#select-all').change(function () {
+            // 获取单选框的选中状态
+            // prop() 可以知道标签中是否包含某个属性，当单选框被选中时，对应的标签就会新增一个 checked 的属性
+            var checked = $(this).prop('checked');
+            // 获取所有 name = select 且不带有disabled属性的单选框
+            // 对于已经下架的商品，我们不希望对应的单选框被选中，因此我们需要加上:not([disabled])
+            $('input[name=select][type=checkbox]:not([disabled])').each(function () {
+                $(this).prop('checked', checked);
+            });
+        });
 
         // 监听【创建订单】按钮的点击事件
+        $('.btn-create-order').click(function () {
+            var req = {
+                address_id: $('#order-form').find('select[name=address]').val(),
+                items: [],
+                remark: $('#order-form').find('textarea[name=remark]').val(),
+                coupon_code: $('input[name=coupon_code]').val(), // 从优惠码输入框中获取优惠码
+            };
+            // 遍历 <table> 标签内所有带有 data-id 属性的 <tr> 标签，也就是每一个购物车中的商品 SKU
+            $('table tr[data-id]').each(function () {
+                // 获取当前行的单选框
+                var $checkbox = $(this).find('input[name=select][type=checkbox]');
+                // 如果单选框被禁用或没有被选中，则跳过
+                if($checkbox.prop('disabled') || !$checkbox.prop('checkbox')) {
+                    return;
+                }
+                // 把 SKU id 和数量存入请求参数
+                req.item.push({
+                    sku_id: $(this).data('id'),
+                    amount: $input.val(),
+                })
+            });
+
+            axios.post('{{ route('orders.store') }}', req)
+                .then(function (response) {
+                    swal('订单提交成功', '', 'success')
+                        .then(() => {
+                            location.href = '/orders/' + response.data.id;
+                        });
+                }, function (error) {
+                    if (error.response.status === 422) {
+                        // http状态码为422，表示用户输入校验失败
+                        var html = '<div>';
+                        _.each(error.respon.data.errors, function (errors) {
+                            _.each(errors, function (error) {
+                                html += error + '<br>';
+                            });
+                        });
+                        html += '</div>';
+                        swal({content: $(html)[0], icon: 'error'})
+                    } else if(error.response.status === 403) {
+                        // 判断是否是有权限访问，403代表资源无权限访问
+                        swal(error.response.data.msg, '', 'error');
+                    } else {
+                        // 其他情况，归类为系统错误
+                        swal('系统错误', '', 'error');
+                    }
+                });
+        });
 
         // 【检查】按钮点击事件
+        $('#btn-check-coupon').click(function () {
+            // 获取用户输入的优惠码
+            var code = $('input[name=coupon_code]').val();
+            // 如果没有输入，则弹窗提示
+            if(!code) {
+                swal('请输入优惠码', '', 'warning');
+                return;
+            }
+            // 调用检查接口
+            axios.get('/coupon_codes/' + encodeURIComponent(code))
+                .then(function (response) {
+                    // then方法的第一个参数是回调，请求成功时会被调用
+                    // 输出优惠信息
+                    $('#coupon_desc').text(response.data.description);
+                    // 禁用输入框
+                    $('input[name=coupon_code]').prop('readonly', true);
+                    $('#btn-cancel-coupon').show(); // 显示【取消】按钮
+                    $('#btn-check-coupon').hide(); // 隐藏【检查】按钮
+                }, function (error) {
+                    // 如果返回码是 404，说明优惠券不存在
+                    if(error.response.status === 404) {
+                        swal('优惠码不存在', '', 'error');
+                    } else if(error.response.status === 403) {
+                        // 如果返回码403，说明无权访问，或我们的条件不满足
+                        swal(error.response.data.msg, '', 'error');
+                    } else {
+                        // 其他错误
+                        swal('系统内部错误', '', 'error');
+                    }
+                })
+        });
 
         // 【隐藏】按钮点击事件
-    })
+        $('#btn-cancel-coupon').click(function () {
+            $('#coupon_desc').text(''); // 隐藏优惠信息
+            $('input[name=coupon_code]').prop('readonly', false); // 启用输入框
+            $('#btn-cancel-coupon').hide(); // 隐藏【取消】按钮
+            $('#btn-check-coupon').show(); // 显示检查按钮
+        });
+    });
 </script>
 @endsection
 @endsection
