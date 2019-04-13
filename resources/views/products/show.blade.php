@@ -155,14 +155,321 @@
                 <div class="product-detail">
                     <ul class="nav nav-tabs" role="tablist">
                         <li class="nav-item">
-                            <a class
+                            <a class="nav-link active" href="#product-detail-tab" aria-controls="product-detail-tab" role="tab" data-toggle="tab" aria-selected="true">商品详情</a>
+                        </li>
+                        <li ckass="nav-item">
+                            <a class="nav-link" href="#product-reviews-tab" aria-controls="product-reviews-tab" role="tab" data-toggle="tab" aria-selected="false">
+                                用户评价
+                            </a>
                         </li>
                     </ul>
+
+                    <div class="tab-content">
+                        <div role="tabpanel" class="tab-pane active" id="product-detail-tab">
+                            <!-- 产品属性开始 -->
+                            <div class="properties-list">
+                                <div class="properties-list-title">产品参数：</div>
+                                <ul class="properties-list-body">
+                                    @foreach($product->grouped_properties as $name => $values)
+                                    <li>{{ $name }}：{{ join(' ', $values) }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            <!-- 产品属性结束 -->
+
+                            <!-- 在商品描述外面包一层div -->
+                            <div class="product-description">
+                                {!! $product->description !!}
+                            </div>
+                        </div>
+
+                        <div role="tabpanel" class="tab-pane" id="product-reviews-tab">
+                            <!-- 评论列表开始 -->
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                <tr>
+                                    <td>用户</td>
+                                    <td>商品</td>
+                                    <td>评分</td>
+                                    <td>评价</td>
+                                    <td>时间</td>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($reviews as $review)
+                                <tr>
+                                    <td>{{ $review->order->user->name }}</td>
+                                    <td>{{ $review->productSku->title }}</td>
+                                    <td>{{ str_repeat('★', $review->rating) }} {{ str_repeat('☆', 5 - $review->rating) }}</td>
+                                    <td>{{ $review->review }}</td>
+                                    <td>{{ $review->reviewed_at->format('Y-m-d H:i') }}</td>
+                                </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                            <!-- 评论列表结束 -->
+                        </div>
+                    </div>
                 </div>
+
+                <!-- 猜你喜欢开始 -->
+                @if(count($similar) > 0)
+                <div class="similar-products">
+                    <div class="title">猜你喜欢</div>
+                    <div class="row products-list">
+                        @foreach($similar as $product)
+                        <div class="col-3 product-item">
+                            <div class="product-content">
+                                <div class="top">
+                                    <div class="img">
+                                        <a href="{{ route('products.show', ['product' => $product->id]) }}">
+                                            <img src="{{ $product->image_url }}"/>
+                                        </a>
+                                    </div>
+                                    <div class="price">
+                                        <b>￥</b>
+                                        {{ $product->price }}
+                                    </div>
+                                    <div class="title">
+                                        <a href="{{ route('products.show', ['product' => $product->id]) }}">
+                                            {{ $product->title }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+                <!-- 猜你喜欢结束 -->
             </div>
         </div>
     </div>
 </div>
+@endsection
+
+@section('scriptsAfterJs')
+<!-- 如果是秒杀商品且尚未开始，则引入momentjs 类库 -->
+@if($product->type == \App\Models\Product::TYPE_SECKILL && $product->seckill->is_before_start)
+<script src="https://cdn.bootcss.com/moment.js/2.22.1/moment.min.js">
+</script>
+@endif
+<script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip({trigger: 'hover'});
+        $('.sku-btn').click(function () {
+            $('.product-info .price span').text($(this).data('price'));
+            $('.product-info .stock').text('库存：' + $(this).data('stock') + '件');
+        });
+
+        // 监听收藏按钮的点击事件
+        $('.btn-favor').click(function () {
+            axios.post('{{ route('products.favor', ['product' => $product->id]) }}')
+                .then(function () {
+                    swal('操作成功', '', 'success')
+                        .then(function () {
+                            location.reload();
+                        });
+                }, function (error) {
+                    // 返回码401，代表当前处于未登录状态
+                    if(error.response && error.response.status === 401) {
+                        swal('请先登录', '', 'error');
+                    } else if(error.response && error.response.data.msg) {
+                        swal(error.response.data.msg, '', 'error');
+                    } else {
+                        swal('系统错误', '', 'error');
+                    }
+                });
+        });
+
+        $('.btn-disfavor').click(function () {
+            axios.delete('{{ route('products.disfavor', ['product' => $product->id]) }}')
+                .then(function () {
+                    swal('操作成功', '', 'success')
+                        .then(function () {
+                            location.reload();
+                        });
+                });
+        });
+
+        // 【加入购物车】按钮点击事件
+        $('.btn-add-to-cart').click(function () {
+            // 请求加入购物车接口
+            axios.post('{{ route('cart.add') }}', {
+                sku_id: $('label.active input[name=skus]').val(),
+                amount: $('.cart_amount input').val(),
+            })
+                .then(function () {
+                    swal('加入购物车成功', '', 'success')
+                        .then(function () {
+                            location.href = '{{ route('cart.index') }}';
+                        });
+                }, function (error) {
+                    if(error.response.status === 401) {
+                        swal('请先登录', '', 'error');
+                    } else if(error.response.status === 422) {
+                        var html = '<div>';
+                        _.each(error.response.data.errors, function (error) {
+                            _.each(errors, function (error) {
+                                html += error + '<br>';
+                            });
+                        });
+                        html += '<div>';
+                        swal({ content: $(html)[0], icon: 'error'});
+                    } else {
+                        swal('系统错误', '', 'error');
+                    }
+                });
+        });
+
+        // 【参与众筹】按钮点击事件
+        $('.btn-crowdfunding').click(function () {
+            if(!$('label.active input[name=skus]').val()) {
+                swal('请先选择商品');
+                return;
+            }
+            // 把用户的收货地址以 JSON 形式放入页面，赋值给 addresses 变量
+            var addresses = {!! json_encode(Auth::check() ? Auth::user()->addresses : []) !!};
+
+            var $form = $('<form></form>');
+
+            $form.append('<div class="form-group row">' + '<label class="col-form-label col-sm-3">选择地址</label>' + '<div class="col-sm-9">' + '<select class="custom-select" name="address_id"></select>' + '</div></div>');
+
+            addresses.forEach(function (address) {
+                $form.find('select[name=address_id]')
+                    .append("<option value='" + address.id + "'>" + address.full_address + ' ' + address.contact_name + ' ' + address.contact_phone + '></option>');
+            });
+            // 在表单中添加一个名为【购买数量】的输入框
+            $form.append('<div class="form-group row">' + '<label class="col-form-label col-sm-3">购买数量</label>' + '<div class="col-sm-9"><input class="form-control" name="amount">' + '</div></div>');
+
+            // 调用SweetAlert弹窗
+            swal({
+                text: '参与众筹',
+                content: $form[0], // 弹窗的内容就是刚刚创建的表单
+                buttons: ['取消', '确定'],
+            })
+                .then(function (ret) {
+                    if(!ret) return;
+                    var req = {
+                        address_id: $form.find('select[name=address_id]').val(),
+                        amount: $form.find('input[name=amount]').val(),
+                        sku_id: $('label.active input[name=skus]').val(),
+                    };
+                    axios.post('{{ route('crowdfunding_orders.store') }}', req)
+                        .then(function (response) {
+                            swal('订单提交成功', '', 'success')
+                                .then(() => {
+                                    location.href = '/orders/' + response.data.id;
+                                });
+                        }, function (error) {
+                            // 输入参数校验失败，展示失败原因
+                            if(error.response.status === 422) {
+                                var html = '<div>';
+                                _.each(error.response.data.errors, function (errors) {
+                                    _.each(errors, function (error) {
+                                        html += error + '<br>';
+                                    })
+                                });
+                                html += '</div>';
+                                swal({content: $(html)[0], icon: 'error'});
+                            } else if(error.response.status === 403) {
+                                swal(error.response.data.msg, '', 'error');
+                            } else {
+                                swal('系统错误', '', 'error');
+                            }
+                        });
+                });
+        });
+
+        // 如果是秒杀商品且尚未开始秒杀
+        @if($product->type == \App\Models\Product::TYPE_SECKILL && $product->seckill->is_before_start)
+        // 将秒杀开始事件转换成一个 moment 对象
+        var startTime = moment.unix({{ $product->seckill->start_at->getTimestamp() }});
+        // 设定一个定时器
+        var hdl = setInterval(function () {
+            var now = moment();
+            if(now.isAfter(startTime)) {
+                // 将秒杀按钮上的 disabled 类去掉，修改按钮文字
+                $('.btn-seckill').removeClass('disabled').removeClass('countdown').text('立即抢购');
+                // 清楚定时器
+                clearInterval(hdl);
+                return;
+            }
+
+            // 获取当前事件与秒杀开始时间差的时，分, 秒
+            var hourDiff = startTime.diff(now, 'hours');
+            var minDiff = startTime.diff(now, 'minutes') % 60;
+            var secDiff = startTime.diff(now, 'seconds') % 60;
+            // 修改按钮的文字
+            $('.btn-seckill').text('抢购倒计时' + hourDiff + ':' + minDiff + ':' + secDiff);
+        }, 500);
+        @endif
+
+        // 秒杀按钮点击事件
+        $('.btn-seckill').click(function () {
+            // 如果秒杀按钮上有 disabled 类，则不做任何操作
+            if($(this).hasClass('disabled')) {
+                return;
+            }
+            if(!$('label.active input[name=skus]').val()) {
+                swal('请先选择商品');
+                return;
+            }
+            // 把用户的收货地址以 JSON 形式放入页面，赋值给 addresses 变量
+            var addresses = {!! json_encode(Auth::check() ? Auth::user()->addresses : []) !!};
+
+            var addressSelector = $('<select class="form-control"></select>');
+
+            addresses.forEach(function (address) {
+                addressSelector.append("<option value='" + address.id + "'>" + address.full_address + ' ' + address.contact_name + ' ' + address.contact_phone + '></option>');
+            });
+            swal({
+                text: '选择收货地址',
+                content: addressSelector[0],
+                buttons: ['取消', '确认'],
+            })
+                .then(function (ret) {
+                    if(!ret) return;
+                    var address = _.find(addresses, {
+                        id: parseInt(addressSelector.val())
+                    });
+                    var req = {
+                        address: _.pick(address, [
+                            'province', 'city', 'district', 'address', 'zip', 'contact_name', 'contact_phone',
+                        ]),
+                        sku_id: $('label.active input[name=skus]').val(),
+                    };
+
+                    axios.post('{{ route('seckill_orders.store') }}', req)
+                        .then(function (response) {
+                            swal('订单提交成功', "", 'success')
+                                .then(() => {
+                                    location.href = '/orders/' + response.data.id;
+                                });
+                        }, function (error) {
+                            if(error.response.status === 422) {
+                                var html = '<div>';
+                                _.each(error.response.data.errors, function (errors) {
+                                    _.each(errors, function (error) {
+                                        html += error + '<br>';
+                                    });
+                                });
+                                html += '</div>';
+                                swal({
+                                    content: $(html)[0],
+                                    icon: 'error',
+                                });
+                            } else if(error.response.status === 403) {
+                                swal(error.response.data.msg, '', 'error');
+                            } else {
+                                swal('系统错误', '', 'error');
+                            }
+                        });
+                });
+        });
+    });
+</script>
 @endsection
 
 @endsection
