@@ -20,7 +20,7 @@ class CategoriesController extends Controller
     }
 
     public function edit ($id, Content $content) {
-        retunr $content->header('编辑商品类目')->body($this->form(true)->edit($id));
+        return $content->header('编辑商品类目')->body($this->form(true)->edit($id));
     }
 
     public function create (Content $content) {
