@@ -1,6 +1,7 @@
+[![Build Status](https://travis-ci.org/OneCodeMonkey/lara_shop_v2.svg?branch=master)](https://travis-ci.org/OneCodeMonkey/lara_shop_v2)
 ## Laravel Shop
 ## 功能
-[![Build Status](https://travis-ci.org/OneCodeMonkey/lara_shop_v2.svg?branch=master)](https://travis-ci.org/OneCodeMonkey/lara_shop_v2)
+
 
 Laravel Shop 功能如下：
 
