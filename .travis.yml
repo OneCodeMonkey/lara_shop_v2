@@ -1,5 +1,5 @@
 language: php
 php:
   - '7.3'
-install: composer -vvv
+install: composer up -vvv
 script: phpunit tests/Unit/ExampleTest.php
