@@ -1,2 +1,5 @@
 language: php
-script: true
+php:
+  - '7.3'
+install: composer -vvv
+script: phpunit tests/Unit/ExampleTest.php
