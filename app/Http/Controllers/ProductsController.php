@@ -40,7 +40,7 @@ class ProductsController extends Controller
         $propertyFilters = [];
 
         if ($filterString = $request->input('filters')) {
-            $filterArray = exploed('|', $filterString);
+            $filterArray = explode('|', $filterString);
             foreach ($filterArray as $filter) {
                 list($name, $value) = explode(':', $filter);
                 $propertyFilters[$name] = $value;
