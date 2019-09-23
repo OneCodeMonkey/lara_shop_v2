@@ -9,6 +9,7 @@ $factory->define(OrderItem::class, function (Faker $faker) {
     $product = Product::query()->where('on_sale', true)->inRandomOrder()->first();
     // 从该商品的 SKU 中随机取一条
     $sku = $product->skus()->inRandomOrder()->first();
+    \Illuminate\Support\Facades\Log::info(json_encode($sku));
 
     return [
         'amount' => random_int(1, 5), // 购买数量随机 1 - 5 份
