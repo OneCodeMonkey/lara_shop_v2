@@ -129,7 +129,7 @@ return [
     ],
 
     'elasticsearch' => [
-        // Elasticsearch 支持多台服务器负载均衡，因此这里是一个数组
+        // Elasticsearch 支持多台服务器负载均衡，因此这里可以是一个数组，目前我们单机测试只用一个节点配置即可
         'hosts' => env('ES_HOSTS', 'localhost'),
     ]
 ];
