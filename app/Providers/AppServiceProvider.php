@@ -69,7 +69,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton('es', function () {
             // 从配置文件里读取 Elasticsearch 服务器列表
             $builder = ESClientBuilder::create()->setHosts(config('database.elasticsearch.hosts'));
-            Log::info('config es hosts' . json_encode(config('database.elasticsearch.hosts')));
             // 如果是本地开发环境
             if (app()->environment() === 'local') {
                 // 配置日志，Elasticsearch 的请求和返回数据将打印到日志文件中，方便我们调试
