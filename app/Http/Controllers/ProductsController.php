@@ -96,7 +96,7 @@ class ProductsController extends Controller
                 'order' => $order,
             ],
             'category' => $category ?? null,
-            'products' => $properties,
+            'properties' => $properties,
             'propertyFilters' => $propertyFilters,
         ]);
     }
