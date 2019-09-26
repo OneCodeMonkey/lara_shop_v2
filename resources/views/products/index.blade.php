@@ -229,4 +229,3 @@
 </script>
 @endsection
 
-@endsection
